@@ -8,6 +8,8 @@ from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserResponse, EditUser
 
+from app.core.security import hash_password
+
 router = APIRouter(
 prefix="/users",
 tags=["Users"]
@@ -22,7 +24,7 @@ def create_user(
     db=db,
     username=user.username,
     email=user.email,
-    password=user.password
+    password=hash_password(user.password)
 )
 
 @router.get("/", response_model=List[UserResponse])

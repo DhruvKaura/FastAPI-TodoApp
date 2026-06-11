@@ -46,3 +46,14 @@ class UserRepository:
     ):
         db.delete(user)
         db.commit()
+
+    @staticmethod
+    def get_by_email(
+        db: Session,
+        email: str
+    ):
+        return (
+            db.query(User)
+            .filter(User.email == email)
+            .first()
+        )
