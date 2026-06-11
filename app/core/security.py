@@ -1,4 +1,24 @@
 from passlib.context import CryptContext
+from jose import jwt, JWTError
+from datetime import datetime, timedelta
+
+from fastapi import HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer
+
+#Import Current User
+from app.database.database import get_db
+from app.repositories.user_repository import UserRepository
+from sqlalchemy.orm import Session
+
+SECRET_KEY = "super-secret-key"
+
+ALGORITHM = "HS256"
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="auth/login"
+)
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
@@ -16,3 +36,72 @@ def verify_password(
         plain_password,
         hashed_password
     )
+
+
+def create_access_token(
+    data: dict
+):
+    to_encode = data.copy()
+
+    expire = (
+        datetime.utcnow()
+        + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+    )
+
+    to_encode.update(
+        {"exp": expire}
+    )
+
+    encoded_jwt = jwt.encode(
+        to_encode,
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+
+    return encoded_jwt
+
+def verify_access_token(token: str):
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        email = payload.get("sub")
+
+        if email is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+
+        return email
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    email = verify_access_token(token)
+
+    user = UserRepository.get_by_email(
+        db,
+        email
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+
+    return user
