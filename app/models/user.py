@@ -16,3 +16,5 @@ class User(Base):
     password = Column(String(255), nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    phone = Column(String, nullable=True)
