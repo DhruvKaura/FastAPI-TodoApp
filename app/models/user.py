@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
+from sqlalchemy.orm import relationship
 
 from app.database.database import Base
 
@@ -18,3 +19,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     phone = Column(String, nullable=True)
+
+    todos = relationship(
+    "Todo",
+    back_populates="owner"
+)
